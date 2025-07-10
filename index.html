@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Phần mềm Tính Doanh Số - VQF</title>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <style>
+    /* Reset & cơ bản */
+    * {
+      box-sizing: border-box;
+    }
+    body, html {
+      margin: 0; padding: 0;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      background: #f5f7fa;
+    }
+
+    /* Menu trái */
+    #sidebar {
+      width: 250px;
+      background-color: #004080;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      transition: width 0.3s ease;
+    }
+    #sidebar.collapsed {
+      width: 60px;
+    }
+    #sidebar .logo {
+      padding: 20px;
+      font-weight: bold;
+      font-size: 24px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.3);
+      user-select: none;
+    }
+    #sidebar.collapsed .logo {
+      font-size: 18px;
+      padding: 20px 10px;
+    }
+
+    /* Menu item */
+    #sidebar nav {
+      flex: 1;
+      padding: 10px 0;
+    }
+    #sidebar nav button {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 18px;
+      padding: 15px 20px;
+      text-align: left;
+      cursor: pointer;
+      border-left: 4px solid transparent;
+      transition: background-color 0.2s, border-left-color 0.2s;
+    }
+    #sidebar nav button:hover,
+    #sidebar nav button.active {
+      background-color: #0059b3;
+      border-left-color: #ffd700;
+    }
+    #sidebar.collapsed nav button span.text {
+      display: none;
+    }
+
+    /* Toggle button */
+    #toggleSidebar {
+      background: #003366;
+      color: white;
+      border: none;
+      cursor: pointer;
+      padding: 10px;
+      font-size: 20px;
+      user-select: none;
+      border-top: 1px solid rgba(255,255,255,0.3);
+    }
+    #sidebar.collapsed #toggleSidebar {
+      text-align: center;
+      font-size: 24px;
+      padding: 10px 0;
+    }
+
+    /* Main content */
+    #mainContent {
+      flex: 1;
+      padding: 25px 40px;
+      overflow-y: auto;
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+      color: #003366;
+    }
+
+    label {
+      font-weight: 600;
+      margin-right: 15px;
+    }
+
+    select, input[type="file"] {
+      font-size: 16px;
+      padding: 7px 10px;
+      margin-bottom: 15px;
+    }
+
+    button.import-btn {
+      margin-right: 10px;
+      padding: 10px 18px;
+      font-size: 16px;
+      background-color: #004080;
+      border: none;
+      color: white;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    button.import-btn:hover {
+      background-color: #0059b3;
+    }
+
+    /* Bảng */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 14px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      background: white;
+    }
+    th, td {
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background-color: #004080;
+      color: white;
+      user-select: none;
+    }
+    tbody tr:hover {
+      background-color: #f0f7ff;
+    }
+
+    /* Scroll bảng nếu nhiều */
+    #mainContent > div.table-container {
+      max-height: 350px;
+      overflow-y: auto;
+      margin-bottom: 30px;
+      border-radius: 6px;
+      box-shadow: inset 0 0 8px #ddd;
+    }
+
+    /* Toast message */
+    #toastContainer {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 300px;
+      z-index: 10000;
+      font-family: Arial, sans-serif;
+    }
+    .toast {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #4CAF50; /* mặc định thành công */
+      color: white;
+      padding: 15px 20px;
+      margin-top: 10px;
+      border-radius: 5px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      animation: slideIn 0.5s ease forwards;
+      user-select: none;
+    }
+    .toast.error {
+      background-color: #f44336;
+    }
+    .toast .close-btn {
+      cursor: pointer;
+      font-weight: bold;
+      margin-left: 15px;
+      font-size: 18px;
+      line-height: 18px;
+    }
+
+    @keyframes slideIn {
+      from {opacity: 0; transform: translateX(100%);}
+      to {opacity: 1; transform: translateX(0);}
+    }
+  </style>
+</head>
+<body>
+
+  <aside id="sidebar">
+    <div class="logo">VQF</div>
+    <nav>
+      <button id="btnTinhDoanhSo" class="active"><span class="text">Tính Doanh Số</span></button>
+      <button id="btnTinhChiPhi"><span class="text">Tính Chi Phí</span></button>
+    </nav>
+    <button id="toggleSidebar" title="Ẩn/Hiện menu">⯈</button>
+  </aside>
+
+  <main id="mainContent">
+    <h1>Phần mềm Tính Doanh Số - VQF</h1>
+
+    <div id="tinhDoanhSoSection">
+      <label for="shopSelect">Chọn Shop:</label>
+      <select id="shopSelect">
+        <option value="Elwyn">Elwyn</option>
+        <option value="Melina">Melina</option>
+      </select>
+
+      <label for="loaiDonSelect" style="margin-left:30px;">Chọn Loại Đơn:</label>
+      <select id="loaiDonSelect">
+        <option value="Đơn thật">Đơn thật</option>
+        <option value="Đơn ảo">Đơn ảo</option>
+      </select>
+
+      <br />
+
+      <input type="file" id="fileInput" accept=".xls,.xlsx" />
+      <br />
+      <button class="import-btn" id="importBtn">Import Đơn</button>
+
+      <!-- Bảng tổng hợp -->
+      <h2>Bảng Tính Tổng Hợp Doanh Số</h2>
+      <div class="table-container">
+        <table id="summaryTable">
+          <thead>
+            <tr>
+              <th>Shop</th>
+              <th>Doanh số (Đơn thật)</th>
+              <th>Doanh số thực tế</th>
+              <th>Doanh số Hoàn/Hủy</th>
+              <th>Doanh số Đơn Hủy</th>
+              <th>Doanh số Đơn Hoàn</th>
+              <th>Tỷ lệ Hủy (%)</th>
+              <th>Tỷ lệ Hoàn (%)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- Bảng danh sách đơn hàng -->
+      <h2>Danh Sách Đơn Hàng</h2>
+      <div class="table-container">
+        <table id="ordersTable">
+          <thead>
+            <tr>
+              <th>Shop</th>
+              <th>Mã Đơn Hàng</th>
+              <th>Mã Vận Đơn</th>
+              <th>Loại Đơn</th>
+              <th>Trạng Thái</th>
+              <th>Trạng Thái Trả hàng/Hoàn tiền</th>
+              <th>Doanh Số</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tính chi phí (phát triển sau) -->
+    <div id="tinhChiPhiSection" style="display:none; color:#666; font-size:18px;">
+      <p><i>Chức năng Tính Chi Phí sẽ được phát triển sau.</i></p>
+    </div>
+
+  </main>
+
+  <!-- Toast messages container -->
+  <div id="toastContainer"></div>
+
+<script>
+  // --- Biến lưu trữ dữ liệu đơn hàng ---
+  // Lưu tất cả đơn hàng đã import, key: mã đơn hàng, value: đối tượng dữ liệu
+  const dataOrders = new Map();
+
+  // Các trạng thái hợp lệ (đơn thật và không bị hoàn trả)
+  const validOrderStatuses = [
+    "Chờ giao hàng",
+    "Đã giao",
+    "Đã nhận được hàng",
+    "Đang giao",
+    "Hoàn thành"
+  ];
+  // Regex trạng thái đặc biệt: chỉ cần chứa đoạn này là hợp lệ
+  const regexConfirmedReceived = /Người mua xác nhận đã nhận được hàng, tuy nhiên Người mua vẫn có thể gửi yêu cầu Trả hàng\/Hoàn tiền/;
+
+  // Trạng thái trả hàng/hoàn tiền loại bỏ
+  const rejectReturnStatuses = [
+    "Đã Chấp Thuận Yêu Cầu",
+    "Đã giải quyết khiếu nại",
+    "Hoàn tất trả hàng",
+    "Yêu cầu chờ xử lý"
+  ];
+
+  // Hàm hiển thị toast message
+  function showToast(message, type = "success") {
+    const container = document.getElementById("toastContainer");
+    const toast = document.createElement("div");
+    toast.classList.add("toast");
+    if(type === "error") toast.classList.add("error");
+    toast.innerHTML = `
+      <span>${message}</span>
+      <span class="close-btn" title="Đóng">&times;</span>
+    `;
+    container.appendChild(toast);
+
+    // Đóng khi click nút close
+    toast.querySelector(".close-btn").addEventListener("click", () => {
+      container.removeChild(toast);
+    });
+
+    // Tự ẩn sau 3s
+    setTimeout(() => {
+      if (container.contains(toast)) {
+        container.removeChild(toast);
+      }
+    }, 3000);
+  }
+
+  // Xử lý import file excel
+  document.getElementById("importBtn").addEventListener("click", () => {
+    const fileInput = document.getElementById("fileInput");
+    if (!fileInput.files.length) {
+      showToast("Vui lòng chọn file Excel để import!", "error");
+      return;
+    }
+
+    const shop = document.getElementById("shopSelect").value;
+    const loaiDon = document.getElementById("loaiDonSelect").value;
+
+    const file = fileInput.files[0];
+
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type:"array"});
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
+
+        let newCount = 0;
+        let updateCount = 0;
+
+        // Duyệt dữ liệu file, xử lý theo yêu cầu
+        for (const row of jsonData) {
+          // Lấy các trường dữ liệu cần thiết
+          const maDonHang = String(row["Mã đơn hàng"] || "").trim();
+          if (!maDonHang) continue; // Bỏ dòng không có mã đơn
+
+          // Lấy dữ liệu trạng thái, kiểu chuỗi
+          const trangThai = String(row["Trạng Thái Đơn Hàng"] || "").trim();
+          const trangThaiTraHangHoanTien = String(row["Trạng thái Trả hàng/Hoàn tiền"] || "").trim();
+
+          // Tính doanh số đơn hàng theo công thức
+          // Tổng giá trị đơn hàng (VND) + Mã giảm giá của Shopee + Giảm giá từ combo Shopee + Shopee Xu được hoàn * 100
+          const tongGiaTri = parseFloat(row["Tổng giá trị đơn hàng (VND)"] || 0);
+          const maGiamGiaShopee = parseFloat(row["Mã giảm giá của Shopee"] || 0);
+          const giamGiaComboShopee = parseFloat(row["Giảm giá từ combo Shopee"] || 0);
+          const shopeeXuHoan = parseFloat(row["Shopee Xu được hoàn"] || 0);
+          const doanhSo = loaiDon === "Đơn ảo" ? 0 : (tongGiaTri + maGiamGiaShopee + giamGiaComboShopee + shopeeXuHoan * 100);
+
+          const maVanDon = String(row["Mã vận đơn"] || "").trim();
+
+          // Nếu mã đơn trùng thì update dữ liệu mới, nếu không thì thêm mới
+          if (dataOrders.has(maDonHang)) {
+            dataOrders.set(maDonHang, {
+              shop,
+              maDonHang,
+              maVanDon,
+              loaiDon,
+              trangThai,
+              trangThaiTraHangHoanTien,
+              doanhSo
+            });
+            updateCount++;
+          } else {
+            dataOrders.set(maDonHang, {
+              shop,
+              maDonHang,
+              maVanDon,
+              loaiDon,
+              trangThai,
+              trangThaiTraHangHoanTien,
+              doanhSo
+            });
+            newCount++;
+          }
+        }
+
+        renderTables();
+        showToast(`Import thành công: ${newCount} đơn mới, ${updateCount} đơn cập nhật`, "success");
+        // Reset file input để có thể import lại file giống hoặc khác
+        fileInput.value = "";
+
+      } catch (err) {
+        console.error(err);
+        showToast("Lỗi khi đọc file Excel. Vui lòng kiểm tra file và thử lại.", "error");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  // Hàm tính toán & render bảng
+  function renderTables() {
+    const summary = {}; // tổng hợp theo shop
+
+    // Tính toán theo từng đơn hàng
+    for (const order of dataOrders.values()) {
+      if (!summary[order.shop]) {
+        summary[order.shop] = {
+          tongDoanhSoDonThat: 0,
+          doanhSoThucTe: 0,
+          doanhSoHuy: 0,
+          doanhSoHoan: 0
+        };
+      }
+      const s = summary[order.shop];
+
+      // Đơn thật mới tính doanh số tổng
+      if (order.loaiDon === "Đơn thật") {
+        s.tongDoanhSoDonThat += order.doanhSo;
+      }
+
+      // Kiểm tra trạng thái đơn hợp lệ cho doanh số thực tế
+      const trangThaiHopLe = validOrderStatuses.includes(order.trangThai) || regexConfirmedReceived.test(order.trangThai);
+      const isTraHangHoanTien = rejectReturnStatuses.includes(order.trangThaiTraHangHoanTien);
+
+      // Đảm bảo các đơn có trạng thái khớp regex cũng được tính doanh số thực tế nếu không bị hoàn trả
+      if (order.loaiDon !== "Đơn ảo" && trangThaiHopLe && !isTraHangHoanTien) {
+        s.doanhSoThucTe += order.doanhSo;
+      }
+
+      // Doanh số đơn hủy
+      if (order.trangThai === "Đã hủy") {
+        s.doanhSoHuy += order.doanhSo;
+      }
+
+      // Doanh số đơn hoàn
+      if (rejectReturnStatuses.includes(order.trangThaiTraHangHoanTien)) {
+        s.doanhSoHoan += order.doanhSo;
+      }
+    }
+
+    // Render bảng Tổng hợp
+    const tbodySummary = document.querySelector("#summaryTable tbody");
+    tbodySummary.innerHTML = "";
+    for (const shop in summary) {
+      const s = summary[shop];
+      const doanhSoHoanHuy = s.tongDoanhSoDonThat - s.doanhSoThucTe;
+      const tyLeHuy = s.tongDoanhSoDonThat > 0 ? ((s.doanhSoHuy / s.tongDoanhSoDonThat) * 100).toFixed(2) : "0.00";
+      const tyLeHoan = s.tongDoanhSoDonThat > 0 ? ((s.doanhSoHoan / s.tongDoanhSoDonThat) * 100).toFixed(2) : "0.00";
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${shop}</td>
+        <td>${s.tongDoanhSoDonThat.toLocaleString()}</td>
+        <td>${s.doanhSoThucTe.toLocaleString()}</td>
+        <td>${doanhSoHoanHuy.toLocaleString()}</td>
+        <td>${s.doanhSoHuy.toLocaleString()}</td>
+        <td>${s.doanhSoHoan.toLocaleString()}</td>
+        <td>${tyLeHuy}%</td>
+        <td>${tyLeHoan}%</td>
+      `;
+      tbodySummary.appendChild(tr);
+    }
+
+    // Render bảng Danh sách đơn hàng
+    const tbodyOrders = document.querySelector("#ordersTable tbody");
+    tbodyOrders.innerHTML = "";
+    for (const order of dataOrders.values()) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${order.shop}</td>
+        <td>${order.maDonHang}</td>
+        <td>${order.maVanDon}</td>
+        <td>${order.loaiDon}</td>
+        <td>${order.trangThai}</td>
+        <td>${order.trangThaiTraHangHoanTien}</td>
+        <td>${order.doanhSo.toLocaleString()}</td>
+      `;
+      tbodyOrders.appendChild(tr);
+    }
+  }
+
+  // Xử lý ẩn/hiện menu
+  const sidebar = document.getElementById("sidebar");
+  const toggleBtn = document.getElementById("toggleSidebar");
+  toggleBtn.addEventListener("click", () => {
+    sidebar.classList.toggle("collapsed");
+    toggleBtn.textContent = sidebar.classList.contains("collapsed") ? "⯈" : "⯇";
+  });
+
+  // Xử lý chuyển tab (Tính doanh số / Tính chi phí)
+  document.getElementById("btnTinhDoanhSo").addEventListener("click", () => {
+    document.getElementById("tinhDoanhSoSection").style.display = "block";
+    document.getElementById("tinhChiPhiSection").style.display = "none";
+    document.getElementById("btnTinhDoanhSo").classList.add("active");
+    document.getElementById("btnTinhChiPhi").classList.remove("active");
+  });
+  document.getElementById("btnTinhChiPhi").addEventListener("click", () => {
+    document.getElementById("tinhDoanhSoSection").style.display = "none";
+    document.getElementById("tinhChiPhiSection").style.display = "block";
+    document.getElementById("btnTinhDoanhSo").classList.remove("active");
+    document.getElementById("btnTinhChiPhi").classList.add("active");
+  });
+</script>
+</body>
+</html>
