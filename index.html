@@ -200,7 +200,6 @@
     <div class="logo">VQF</div>
     <nav>
       <button id="btnTinhDoanhSo" class="active"><span class="text">Tính Doanh Số</span></button>
-      <button id="btnTinhChiPhi"><span class="text">Tính Chi Phí</span></button>
     </nav>
     <button id="toggleSidebar" title="Ẩn/Hiện menu">⯈</button>
   </aside>
@@ -223,13 +222,18 @@
 
       <br />
 
-      <input type="file" id="fileInput" accept=".xls,.xlsx" />
-      <br />
+      <input type="file" id="fileInput" accept=".xls,.xlsx,.csv" />
       <button class="import-btn" id="importBtn">Import Đơn</button>
+      <input type="file" id="affFileInput" accept=".xls,.xlsx,.csv" style="margin-left:20px;" />
+      <button class="import-btn" id="importAffBtn">Import AFF</button>
+      <button class="import-btn" id="debugBtn" style="margin-left:20px; background-color: #ff9800;">Debug Info</button>
 
       <!-- Bảng tổng hợp -->
-      <h2>Bảng Tính Tổng Hợp Doanh Số</h2>
-      <div class="table-container">
+      <h2 style="display:flex;align-items:center;gap:8px;">
+        Bảng Tính Tổng Hợp Doanh Số
+        <button id="toggleSummaryTable" style="background:none;border:none;font-size:20px;cursor:pointer;">▼</button>
+      </h2>
+      <div class="table-container" id="summaryTableContainer">
         <table id="summaryTable">
           <thead>
             <tr>
@@ -247,29 +251,116 @@
         </table>
       </div>
 
+      <!-- Bảng Chi phí sàn -->
+      <h2 style="display:flex;align-items:center;gap:8px;">
+        Bảng Chi phí Sàn
+        <button id="togglePlatformCostTable" style="background:none;border:none;font-size:20px;cursor:pointer;">▼</button>
+      </h2>
+      <div class="table-container" id="platformCostTableContainer">
+        <table id="platformCostTable">
+          <thead>
+            <tr>
+              <th>Shop</th>
+              <th>Số đơn hàng thực tế</th>
+              <th>Phí cố định</th>
+              <th>Phí dịch vụ</th>
+              <th>Phí thanh toán</th>
+              <th>Phí Pi Ship</th>
+              <th>Tổng Chi phí Sàn</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- Bảng Chi phí tổng hợp -->
+      <h2 style="display:flex;align-items:center;gap:8px;">
+        Bảng Chi phí Tổng hợp
+        <button id="toggleCostSummaryTable" style="background:none;border:none;font-size:20px;cursor:pointer;">▼</button>
+      </h2>
+      <div class="table-container" id="costSummaryTableContainer">
+        <table id="costSummaryTable">
+          <thead>
+            <tr>
+              <th>Shop</th>
+              <th>Mã giảm giá của Shop</th>
+              <th>Combo của Shop</th>
+              <th>Giảm giá Combo Ghép</th>
+              <th>Chi phí FLsale</th>
+              <th>Chi phí AFF</th>
+              <th>Tổng Chi phí</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
       <!-- Bảng danh sách đơn hàng -->
-      <h2>Danh Sách Đơn Hàng</h2>
-      <div class="table-container">
+      <h2 style="display:flex;align-items:center;gap:8px;">
+        Danh Sách Đơn Hàng
+        <button id="toggleOrdersTable" style="background:none;border:none;font-size:20px;cursor:pointer;">▼</button>
+      </h2>
+      <div style="margin-bottom:10px;" id="ordersTableFilterBar">
+        <label for="giaUuDaiFilter">Lọc theo Giá ưu đãi:</label>
+        <select id="giaUuDaiFilter"></select>
+        <input type="number" min="0" id="batchFlSaleInput" placeholder="Nhập Chi phí FLsale" style="width:120px; margin-left:10px;">
+        <button class="import-btn" id="applyBatchFlSaleBtn">Áp dụng hàng loạt</button>
+        <button class="import-btn" id="saveFlSaleBtn">Lưu Chi phí FLsale</button>
+      </div>
+      <div class="table-container" id="ordersTableContainer">
         <table id="ordersTable">
           <thead>
             <tr>
+              <th><input type="checkbox" id="selectAllOrders"></th>
               <th>Shop</th>
               <th>Mã Đơn Hàng</th>
               <th>Mã Vận Đơn</th>
               <th>Loại Đơn</th>
               <th>Trạng Thái</th>
               <th>Trạng Thái Trả hàng/Hoàn tiền</th>
+              <th>Giá ưu đãi</th>
               <th>Doanh Số</th>
+              <th>Chi phí FLsale</th>
+              <th>Chi phí Combo ghép</th>
+            </tr>
+            <tr id="ordersTableSearchRow">
+              <th><input type="text" class="search-col" data-col="shop" style="width:90px"></th>
+              <th><input type="text" class="search-col" data-col="maDonHang" style="width:110px"></th>
+              <th><input type="text" class="search-col" data-col="maVanDon" style="width:110px"></th>
+              <th><input type="text" class="search-col" data-col="loaiDon" style="width:90px"></th>
+              <th><input type="text" class="search-col" data-col="trangThai" style="width:110px"></th>
+              <th><input type="text" class="search-col" data-col="trangThaiTraHangHoanTien" style="width:140px"></th>
+              <th><input type="text" class="search-col" data-col="giaUuDai" style="width:90px"></th>
+              <th><input type="text" class="search-col" data-col="doanhSo" style="width:90px"></th>
+              <th><input type="text" class="search-col" data-col="flSaleCost" style="width:90px"></th>
+              <th><input type="text" class="search-col" data-col="comboCost" style="width:90px"></th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
-    </div>
+      <!-- Bảng dữ liệu AFF -->
+      <h2 style="margin-top:30px;">Bảng Dữ Liệu AFF</h2>
+      <div class="table-container" id="affTableContainer">
+        <table id="affTable">
+          <thead>
+            <tr>
+              <th>Shop</th>
+              <th>Mã đơn hàng</th>
+              <th>Trạng thái đơn hàng</th>
+              <th>Trạng thái gian lận</th>
+              <th>Tài khoản Tiếp thị liên kết</th>
+              <th>MCN được liên kết</th>
+              <th>Kênh</th>
+              <th>Chi phí(₫)</th>
+              <th>Trạng thái khấu trừ</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
 
-    <!-- Tính chi phí (phát triển sau) -->
-    <div id="tinhChiPhiSection" style="display:none; color:#666; font-size:18px;">
-      <p><i>Chức năng Tính Chi Phí sẽ được phát triển sau.</i></p>
+
     </div>
 
   </main>
@@ -281,6 +372,8 @@
   // --- Biến lưu trữ dữ liệu đơn hàng ---
   // Lưu tất cả đơn hàng đã import, key: mã đơn hàng, value: đối tượng dữ liệu
   const dataOrders = new Map();
+  // Lưu chi phí FLsale tạm thời trước khi lưu
+  const flSaleCosts = new Map();
 
   // Các trạng thái hợp lệ (đơn thật và không bị hoàn trả)
   const validOrderStatuses = [
@@ -362,43 +455,74 @@
           const trangThaiTraHangHoanTien = String(row["Trạng thái Trả hàng/Hoàn tiền"] || "").trim();
 
           // Tính doanh số đơn hàng theo công thức
-          // Tổng giá trị đơn hàng (VND) + Mã giảm giá của Shopee + Giảm giá từ combo Shopee + Shopee Xu được hoàn * 100
-          const tongGiaTri = parseFloat(row["Tổng giá trị đơn hàng (VND)"] || 0);
-          const maGiamGiaShopee = parseFloat(row["Mã giảm giá của Shopee"] || 0);
-          const giamGiaComboShopee = parseFloat(row["Giảm giá từ combo Shopee"] || 0);
-          const shopeeXuHoan = parseFloat(row["Shopee Xu được hoàn"] || 0);
-          const doanhSo = loaiDon === "Đơn ảo" ? 0 : (tongGiaTri + maGiamGiaShopee + giamGiaComboShopee + shopeeXuHoan * 100);
+          let tongGiaTri = parseFloat(row["Tổng giá trị đơn hàng (VND)"] || 0);
+          let maGiamGiaShopee = parseFloat(row["Mã giảm giá của Shopee"] || 0);
+          let giamGiaComboShopee = parseFloat(row["Giảm giá từ combo Shopee"] || 0);
+          let shopeeXuHoan = parseFloat(row["Shopee Xu được hoàn"] || 0);
+          let doanhSo = loaiDon === "Đơn ảo" ? 0 : (tongGiaTri + maGiamGiaShopee + giamGiaComboShopee + shopeeXuHoan * 100);
+
+          // Nếu trạng thái trả hàng/hoàn tiền là 1 trong 3 giá trị đặc biệt thì doanh số = 0
+          if (["Đã Chấp Thuận Yêu Cầu", "Yêu cầu chờ xử lý", "Đã giải quyết khiếu nại"].includes(trangThaiTraHangHoanTien)) {
+            doanhSo = 0;
+          }
 
           const maVanDon = String(row["Mã vận đơn"] || "").trim();
+          const sku = String(row["SKU phân loại hàng"] || "");
+          const comboCost = getBundledProductCost(sku);
 
-          // Nếu mã đơn trùng thì update dữ liệu mới, nếu không thì thêm mới
-          if (dataOrders.has(maDonHang)) {
-            dataOrders.set(maDonHang, {
-              shop,
-              maDonHang,
-              maVanDon,
-              loaiDon,
-              trangThai,
-              trangThaiTraHangHoanTien,
-              doanhSo
-            });
-            updateCount++;
-          } else {
-            dataOrders.set(maDonHang, {
-              shop,
-              maDonHang,
-              maVanDon,
-              loaiDon,
-              trangThai,
-              trangThaiTraHangHoanTien,
-              doanhSo
-            });
-            newCount++;
+          // Lấy giá ưu đãi trực tiếp từ cột "Giá ưu đãi" trong file excel
+          let giaUuDai = row["Giá ưu đãi"];
+
+          // Lấy thêm các trường cần thiết cho tính toán chi phí
+          let maGiamGiaShop = parseFloat(row["Mã giảm giá của Shop"] || 0);
+          let giamGiaComboShop = parseFloat(row["Giảm giá từ combo của Shop"] || 0);
+          
+          // Hàm lấy giá trị cột bất kể hoa thường, dấu cách
+          function getColValue(row, ...possibleNames) {
+            for (const name of possibleNames) {
+              for (const key in row) {
+                if (key.replace(/\s+/g, '').toLowerCase() === name.replace(/\s+/g, '').toLowerCase()) {
+                  return row[key];
+                }
+              }
+            }
+            return 0;
           }
+
+          // Lấy các phí từ Excel (linh hoạt tên cột)
+          let phiCoDinh = parseFloat(getColValue(row, "Phí cố định", "cố định") || 0);
+          let phiDichVu = parseFloat(getColValue(row, "Phí dịch vụ", "Phí Dịch Vụ") || 0);
+          let phiThanhToan = parseFloat(getColValue(row, "Phí thanh toán") || 0);
+
+          // Nếu mã đơn đã tồn tại thì bỏ qua (chỉ lấy dòng đầu tiên)
+          if (dataOrders.has(maDonHang)) {
+            continue;
+          }
+
+          // Chỉ thêm mới, không update
+          dataOrders.set(maDonHang, {
+            shop,
+            maDonHang,
+            maVanDon,
+            loaiDon,
+            trangThai,
+            trangThaiTraHangHoanTien,
+            doanhSo,
+            comboCost,
+            giaUuDai,
+            maGiamGiaShop,
+            giamGiaComboShop,
+            maGiamGiaShopee,
+            giamGiaComboShopee,
+            phiCoDinh,
+            phiDichVu,
+            phiThanhToan
+          });
+          newCount++;
         }
 
         renderTables();
-        showToast(`Import thành công: ${newCount} đơn mới, ${updateCount} đơn cập nhật`, "success");
+        showToast(`Import thành công: ${newCount} đơn mới (loại bỏ ${jsonData.length - newCount} đơn trùng)`, "success");
         // Reset file input để có thể import lại file giống hoặc khác
         fileInput.value = "";
 
@@ -409,6 +533,110 @@
     };
     reader.readAsArrayBuffer(file);
   });
+
+  // Biến lưu dữ liệu AFF
+  let affOrders = [];
+
+  // Xử lý import file AFF
+  document.getElementById("importAffBtn").addEventListener("click", () => {
+    const affFileInput = document.getElementById("affFileInput");
+    if (!affFileInput.files.length) {
+      showToast("Vui lòng chọn file AFF để import!", "error");
+      return;
+    }
+    const shop = document.getElementById("shopSelect").value;
+    const file = affFileInput.files[0];
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type:"array"});
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
+        // Map để chỉ lưu dòng đầu tiên cho mỗi mã đơn hàng
+        const affOrderMap = new Map();
+        for (const row of jsonData) {
+          // Lấy các trường cần thiết
+          const maDonHang = String(row["Mã đơn hàng"] || "").trim();
+          if (!maDonHang) continue; // Bỏ dòng không có mã đơn
+          
+          // Nếu mã đơn đã tồn tại thì bỏ qua (chỉ lấy dòng đầu tiên)
+          if (affOrderMap.has(maDonHang)) {
+            continue;
+          }
+          
+          const trangThaiDonHang = String(row["Trạng thái đơn hàng"] || "").trim();
+          const trangThaiGianLan = String(row["Trạng thái gian lận"] || "").trim();
+          const taiKhoanTTLK = String(row["Tài khoản Tiếp thị liên kết"] || "").trim();
+          const mcnDuocLienKet = String(row["MCN được liên kết"] || "").trim();
+          const kenh = String(row["Kênh"] || "").trim();
+          const chiPhiRaw = row["Chi phí(₫)"];
+          const trangThaiKhauTru = String(row["Trạng thái khấu trừ"] || "").trim();
+          // Tính chi phí
+          let chiPhi = 0;
+          if (["Trừ tiền chờ xử lý", "Đã khấu trừ"].includes(trangThaiKhauTru)) {
+            chiPhi = typeof chiPhiRaw === 'number' ? chiPhiRaw : (typeof chiPhiRaw === 'string' && chiPhiRaw !== '' && !isNaN(Number(chiPhiRaw.replace(/,/g, '')))) ? Number(chiPhiRaw.replace(/,/g, '')) : 0;
+          }
+          affOrderMap.set(maDonHang, {
+            shop,
+            maDonHang,
+            trangThaiDonHang,
+            trangThaiGianLan,
+            taiKhoanTTLK,
+            mcnDuocLienKet,
+            kenh,
+            chiPhi,
+            trangThaiKhauTru
+          });
+        }
+        affOrders = Array.from(affOrderMap.values());
+        renderAffTable();
+        showToast(`Import AFF thành công: ${affOrders.length} dòng`, "success");
+        affFileInput.value = "";
+      } catch (err) {
+        console.error(err);
+        showToast("Lỗi khi đọc file AFF. Vui lòng kiểm tra file và thử lại.", "error");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  const formatVND = v => {
+  let num = typeof v === 'number' ? v : (typeof v === 'string' && v !== '' && !isNaN(Number(v.replace(/,/g, '')))) ? Number(v.replace(/,/g, '')) : null;
+  return num !== null ? num.toLocaleString('vi-VN', {style: 'currency', currency: 'VND', minimumFractionDigits: 0}) : v;
+};
+
+  // Đổi filter Doanh số thành filter Giá ưu đãi
+  // Format cho filter dropdown
+  function renderGiaUuDaiFilter() {
+    const filter = document.getElementById("giaUuDaiFilter");
+    // Lưu lại giá trị filter hiện tại
+    const currentValue = filter.value;
+    const values = Array.from(dataOrders.values()).map(o => o.giaUuDai);
+    const unique = Array.from(new Set(values)).filter(v => v !== undefined && v !== '').sort((a,b) => Number(a)-Number(b));
+    filter.innerHTML = '<option value="">Tất cả</option>' + unique.map(v => `<option value="${v}">${formatVND(v)}</option>`).join("");
+    // Giữ lại giá trị filter hiện tại nếu còn tồn tại, nếu không thì về "Tất cả"
+    if (currentValue && unique.includes(currentValue)) {
+      filter.value = currentValue;
+    } else {
+      filter.value = "";
+    }
+  }
+
+  // Biến lưu filter từng cột
+  const ordersTableColFilters = {
+    shop: '',
+    maDonHang: '',
+    maVanDon: '',
+    loaiDon: '',
+    trangThai: '',
+    trangThaiTraHangHoanTien: '',
+    doanhSo: '',
+    flSaleCost: '',
+    comboCost: '',
+    giaUuDai: ''
+  };
 
   // Hàm tính toán & render bảng
   function renderTables() {
@@ -454,11 +682,26 @@
     // Render bảng Tổng hợp
     const tbodySummary = document.querySelector("#summaryTable tbody");
     tbodySummary.innerHTML = "";
+    let totalSummary = {
+      tongDoanhSoDonThat: 0,
+      doanhSoThucTe: 0,
+      doanhSoHoanHuy: 0,
+      doanhSoHuy: 0,
+      doanhSoHoan: 0
+    };
+    
     for (const shop in summary) {
       const s = summary[shop];
       const doanhSoHoanHuy = s.tongDoanhSoDonThat - s.doanhSoThucTe;
       const tyLeHuy = s.tongDoanhSoDonThat > 0 ? ((s.doanhSoHuy / s.tongDoanhSoDonThat) * 100).toFixed(2) : "0.00";
       const tyLeHoan = s.tongDoanhSoDonThat > 0 ? ((s.doanhSoHoan / s.tongDoanhSoDonThat) * 100).toFixed(2) : "0.00";
+
+      // Cộng vào tổng
+      totalSummary.tongDoanhSoDonThat += s.tongDoanhSoDonThat;
+      totalSummary.doanhSoThucTe += s.doanhSoThucTe;
+      totalSummary.doanhSoHoanHuy += doanhSoHoanHuy;
+      totalSummary.doanhSoHuy += s.doanhSoHuy;
+      totalSummary.doanhSoHoan += s.doanhSoHoan;
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -473,26 +716,289 @@
       `;
       tbodySummary.appendChild(tr);
     }
+    
+    // Thêm dòng tổng
+    const trTotalSummary = document.createElement("tr");
+    trTotalSummary.style.fontWeight = "bold";
+    trTotalSummary.style.backgroundColor = "#f0f0f0";
+    const tyLeHuyTotal = totalSummary.tongDoanhSoDonThat > 0 ? ((totalSummary.doanhSoHuy / totalSummary.tongDoanhSoDonThat) * 100).toFixed(2) : "0.00";
+    const tyLeHoanTotal = totalSummary.tongDoanhSoDonThat > 0 ? ((totalSummary.doanhSoHoan / totalSummary.tongDoanhSoDonThat) * 100).toFixed(2) : "0.00";
+    trTotalSummary.innerHTML = `
+      <td><strong>TỔNG</strong></td>
+      <td><strong>${totalSummary.tongDoanhSoDonThat.toLocaleString()}</strong></td>
+      <td><strong>${totalSummary.doanhSoThucTe.toLocaleString()}</strong></td>
+      <td><strong>${totalSummary.doanhSoHoanHuy.toLocaleString()}</strong></td>
+      <td><strong>${totalSummary.doanhSoHuy.toLocaleString()}</strong></td>
+      <td><strong>${totalSummary.doanhSoHoan.toLocaleString()}</strong></td>
+      <td><strong>${tyLeHuyTotal}%</strong></td>
+      <td><strong>${tyLeHoanTotal}%</strong></td>
+    `;
+    tbodySummary.appendChild(trTotalSummary);
 
     // Render bảng Danh sách đơn hàng
     const tbodyOrders = document.querySelector("#ordersTable tbody");
     tbodyOrders.innerHTML = "";
+    const giaUuDaiFilter = document.getElementById("giaUuDaiFilter").value;
     for (const order of dataOrders.values()) {
+      if (giaUuDaiFilter && order.giaUuDai != giaUuDaiFilter) continue;
+      // Lọc theo từng cột
+      if (ordersTableColFilters.shop && !order.shop.toLowerCase().includes(ordersTableColFilters.shop)) continue;
+      if (ordersTableColFilters.maDonHang && !order.maDonHang.toLowerCase().includes(ordersTableColFilters.maDonHang)) continue;
+      if (ordersTableColFilters.maVanDon && !order.maVanDon.toLowerCase().includes(ordersTableColFilters.maVanDon)) continue;
+      if (ordersTableColFilters.loaiDon && !order.loaiDon.toLowerCase().includes(ordersTableColFilters.loaiDon)) continue;
+      if (ordersTableColFilters.trangThai && !order.trangThai.toLowerCase().includes(ordersTableColFilters.trangThai)) continue;
+      if (ordersTableColFilters.trangThaiTraHangHoanTien && !order.trangThaiTraHangHoanTien.toLowerCase().includes(ordersTableColFilters.trangThaiTraHangHoanTien)) continue;
+      if (ordersTableColFilters.doanhSo && !order.doanhSo.toString().includes(ordersTableColFilters.doanhSo)) continue;
+      if (ordersTableColFilters.flSaleCost && !(typeof order.flSaleCost !== 'undefined' && order.flSaleCost.toString().includes(ordersTableColFilters.flSaleCost))) continue;
+      if (ordersTableColFilters.comboCost && !(typeof order.comboCost !== 'undefined' && order.comboCost.toString().includes(ordersTableColFilters.comboCost))) continue;
+      if (ordersTableColFilters.giaUuDai && !(typeof order.giaUuDai !== 'undefined' && order.giaUuDai.toString().includes(ordersTableColFilters.giaUuDai))) continue;
+      const formatNumber = v => (typeof v === 'number' && !isNaN(v)) ? v.toLocaleString('vi-VN') : (typeof v === 'string' && v !== '' && !isNaN(Number(v))) ? Number(v).toLocaleString('vi-VN') : v;
       const tr = document.createElement("tr");
       tr.innerHTML = `
+        <td><input type="checkbox" class="order-checkbox" data-madon="${order.maDonHang}"></td>
         <td>${order.shop}</td>
         <td>${order.maDonHang}</td>
         <td>${order.maVanDon}</td>
         <td>${order.loaiDon}</td>
         <td>${order.trangThai}</td>
         <td>${order.trangThaiTraHangHoanTien}</td>
-        <td>${order.doanhSo.toLocaleString()}</td>
+        <td>${order.giaUuDai !== undefined ? formatVND(order.giaUuDai) : ''}</td>
+        <td>${formatVND(order.doanhSo)}</td>
+        <td><input type="number" min="0" class="flsale-input" data-madon="${order.maDonHang}" value="${typeof order.flSaleCost !== 'undefined' ? order.flSaleCost : ''}" style="width:90px;"></td>
+        <td>${order.comboCost ? formatVND(order.comboCost) : ''}</td>
       `;
       tbodyOrders.appendChild(tr);
     }
+    renderGiaUuDaiFilter();
+    renderCostTables();
   }
 
-  // Xử lý ẩn/hiện menu
+  // Hàm render bảng AFF
+function renderAffTable() {
+  const tbody = document.querySelector("#affTable tbody");
+  tbody.innerHTML = "";
+  for (const order of affOrders) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${order.shop}</td>
+      <td>${order.maDonHang}</td>
+      <td>${order.trangThaiDonHang}</td>
+      <td>${order.trangThaiGianLan}</td>
+      <td>${order.taiKhoanTTLK}</td>
+      <td>${order.mcnDuocLienKet}</td>
+      <td>${order.kenh}</td>
+      <td>${formatVND(order.chiPhi)}</td>
+      <td>${order.trangThaiKhauTru}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+  renderCostTables();
+}
+
+  // Hàm render bảng chi phí tổng hợp và chi phí sàn
+function renderCostTables() {
+  // Tính toán chi phí tổng hợp theo shop
+  const costSummary = {};
+  const platformCost = {};
+
+  // Debug: Đếm tổng số đơn hàng
+  const totalOrders = dataOrders.size;
+  console.log(`Tổng số đơn hàng trong dataOrders: ${totalOrders}`);
+
+  // Khởi tạo dữ liệu cho từng shop
+  for (const order of dataOrders.values()) {
+    if (!costSummary[order.shop]) {
+      costSummary[order.shop] = {
+        maGiamGiaShop: 0,
+        giamGiaComboShop: 0,
+        giamGiaComboGhep: 0,
+        chiPhiFLsale: 0,
+        phiCoDinh: 0,
+        phiDichVu: 0,
+        phiThanhToan: 0,
+        totalOrders: 0,
+        validOrders: 0
+      };
+    }
+    if (!platformCost[order.shop]) {
+      platformCost[order.shop] = {
+        soDonThucTe: 0,
+        totalOrders: 0,
+        phiCoDinh: 0,
+        phiDichVu: 0,
+        phiThanhToan: 0
+      };
+    }
+
+    // Đếm tổng số đơn hàng theo shop
+    costSummary[order.shop].totalOrders++;
+    platformCost[order.shop].totalOrders++;
+
+    // Cộng dồn các chi phí
+    costSummary[order.shop].maGiamGiaShop += order.maGiamGiaShop || 0;
+    costSummary[order.shop].giamGiaComboShop += order.giamGiaComboShop || 0;
+    costSummary[order.shop].giamGiaComboGhep += order.comboCost || 0;
+    costSummary[order.shop].chiPhiFLsale += order.flSaleCost || 0;
+    
+    // Cộng dồn các phí từ Excel (không quan tâm trạng thái đơn hàng)
+    costSummary[order.shop].phiCoDinh += order.phiCoDinh || 0;
+    costSummary[order.shop].phiDichVu += order.phiDichVu || 0;
+    costSummary[order.shop].phiThanhToan += order.phiThanhToan || 0;
+    platformCost[order.shop].phiCoDinh += order.phiCoDinh || 0;
+    platformCost[order.shop].phiDichVu += order.phiDichVu || 0;
+    platformCost[order.shop].phiThanhToan += order.phiThanhToan || 0;
+
+    // Đếm số đơn hàng thực tế (đơn hàng đáp ứng tiêu chí doanh số thực tế)
+    const trangThaiHopLe = validOrderStatuses.includes(order.trangThai) || regexConfirmedReceived.test(order.trangThai);
+    const isTraHangHoanTien = rejectReturnStatuses.includes(order.trangThaiTraHangHoanTien);
+    
+    // Debug: In ra thông tin đơn hàng không hợp lệ
+    if (order.loaiDon === "Đơn ảo") {
+      console.log(`Đơn ảo bị loại: ${order.maDonHang} - ${order.shop}`);
+    } else if (!trangThaiHopLe) {
+      console.log(`Trạng thái không hợp lệ: ${order.maDonHang} - ${order.trangThai} - ${order.shop}`);
+    } else if (isTraHangHoanTien) {
+      console.log(`Bị hoàn trả: ${order.maDonHang} - ${order.trangThaiTraHangHoanTien} - ${order.shop}`);
+    } else {
+      costSummary[order.shop].validOrders++;
+    }
+    
+    if (order.loaiDon !== "Đơn ảo" && trangThaiHopLe && !isTraHangHoanTien) {
+      platformCost[order.shop].soDonThucTe++;
+    }
+  }
+
+  // Debug: In ra thống kê theo shop
+  for (const shop in platformCost) {
+    console.log(`${shop}: Tổng ${platformCost[shop].totalOrders} đơn, Thực tế ${platformCost[shop].soDonThucTe} đơn`);
+  }
+
+  // Cộng chi phí AFF theo shop
+  for (const affOrder of affOrders) {
+    if (!costSummary[affOrder.shop]) {
+      costSummary[affOrder.shop] = {
+        maGiamGiaShop: 0,
+        giamGiaComboShop: 0,
+        giamGiaComboGhep: 0,
+        chiPhiFLsale: 0,
+        chiPhiAFF: 0,
+        phiCoDinh: 0,
+        phiDichVu: 0,
+        phiThanhToan: 0,
+        totalOrders: 0,
+        validOrders: 0
+      };
+    }
+    costSummary[affOrder.shop].chiPhiAFF = (costSummary[affOrder.shop].chiPhiAFF || 0) + affOrder.chiPhi;
+  }
+
+  // Render bảng chi phí tổng hợp
+  const tbodyCostSummary = document.querySelector("#costSummaryTable tbody");
+  tbodyCostSummary.innerHTML = "";
+  let totalCostSummary = {
+    maGiamGiaShop: 0,
+    giamGiaComboShop: 0,
+    giamGiaComboGhep: 0,
+    chiPhiFLsale: 0,
+    chiPhiAFF: 0,
+    tongChiPhi: 0
+  };
+  
+  for (const shop in costSummary) {
+    const cost = costSummary[shop];
+    const tongChiPhi = cost.maGiamGiaShop + cost.giamGiaComboShop + cost.giamGiaComboGhep + cost.chiPhiFLsale + cost.chiPhiAFF;
+    
+    // Cộng vào tổng
+    totalCostSummary.maGiamGiaShop += cost.maGiamGiaShop;
+    totalCostSummary.giamGiaComboShop += cost.giamGiaComboShop;
+    totalCostSummary.giamGiaComboGhep += cost.giamGiaComboGhep;
+    totalCostSummary.chiPhiFLsale += cost.chiPhiFLsale;
+    totalCostSummary.chiPhiAFF += cost.chiPhiAFF;
+    totalCostSummary.tongChiPhi += tongChiPhi;
+    
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${shop}</td>
+      <td>${formatVND(cost.maGiamGiaShop)}</td>
+      <td>${formatVND(cost.giamGiaComboShop)}</td>
+      <td>${formatVND(cost.giamGiaComboGhep)}</td>
+      <td>${formatVND(cost.chiPhiFLsale)}</td>
+      <td>${formatVND(cost.chiPhiAFF)}</td>
+      <td>${formatVND(tongChiPhi)}</td>
+    `;
+    tbodyCostSummary.appendChild(tr);
+  }
+  
+  // Thêm dòng tổng
+  const trTotal = document.createElement("tr");
+  trTotal.style.fontWeight = "bold";
+  trTotal.style.backgroundColor = "#f0f0f0";
+  trTotal.innerHTML = `
+    <td><strong>TỔNG</strong></td>
+    <td><strong>${formatVND(totalCostSummary.maGiamGiaShop)}</strong></td>
+    <td><strong>${formatVND(totalCostSummary.giamGiaComboShop)}</strong></td>
+    <td><strong>${formatVND(totalCostSummary.giamGiaComboGhep)}</strong></td>
+    <td><strong>${formatVND(totalCostSummary.chiPhiFLsale)}</strong></td>
+    <td><strong>${formatVND(totalCostSummary.chiPhiAFF)}</strong></td>
+    <td><strong>${formatVND(totalCostSummary.tongChiPhi)}</strong></td>
+  `;
+  tbodyCostSummary.appendChild(trTotal);
+
+  // Render bảng chi phí sàn
+  const tbodyPlatformCost = document.querySelector("#platformCostTable tbody");
+  tbodyPlatformCost.innerHTML = "";
+  let totalPlatformCost = {
+    soDonThucTe: 0,
+    phiCoDinh: 0,
+    phiDichVu: 0,
+    phiThanhToan: 0,
+    phiPiShip: 0,
+    tongChiPhiSan: 0
+  };
+  
+  for (const shop in platformCost) {
+    const cost = platformCost[shop];
+    const phiPiShip = 1650 * cost.totalOrders;  // Phí Pi Ship = 1650 × tổng số đơn hàng của shop
+    const tongChiPhiSan = cost.phiCoDinh + cost.phiDichVu + cost.phiThanhToan + phiPiShip;
+    
+    // Cộng vào tổng
+    totalPlatformCost.soDonThucTe += cost.soDonThucTe;
+    totalPlatformCost.phiCoDinh += cost.phiCoDinh;
+    totalPlatformCost.phiDichVu += cost.phiDichVu;
+    totalPlatformCost.phiThanhToan += cost.phiThanhToan;
+    totalPlatformCost.phiPiShip += phiPiShip;
+    totalPlatformCost.tongChiPhiSan += tongChiPhiSan;
+    
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${shop}</td>
+      <td>${cost.soDonThucTe} (Tổng: ${cost.totalOrders})</td>
+      <td>${formatVND(cost.phiCoDinh)}</td>
+      <td>${formatVND(cost.phiDichVu)}</td>
+      <td>${formatVND(cost.phiThanhToan)}</td>
+      <td>${formatVND(phiPiShip)}</td>
+      <td>${formatVND(tongChiPhiSan)}</td>
+    `;
+    tbodyPlatformCost.appendChild(tr);
+  }
+  
+  // Thêm dòng tổng
+  const trTotalPlatform = document.createElement("tr");
+  trTotalPlatform.style.fontWeight = "bold";
+  trTotalPlatform.style.backgroundColor = "#f0f0f0";
+  trTotalPlatform.innerHTML = `
+    <td><strong>TỔNG</strong></td>
+    <td><strong>${totalPlatformCost.soDonThucTe}</strong></td>
+    <td><strong>${formatVND(totalPlatformCost.phiCoDinh)}</strong></td>
+    <td><strong>${formatVND(totalPlatformCost.phiDichVu)}</strong></td>
+    <td><strong>${formatVND(totalPlatformCost.phiThanhToan)}</strong></td>
+    <td><strong>${formatVND(totalPlatformCost.phiPiShip)}</strong></td>
+    <td><strong>${formatVND(totalPlatformCost.tongChiPhiSan)}</strong></td>
+  `;
+  tbodyPlatformCost.appendChild(trTotalPlatform);
+}
+
+// Xử lý ẩn/hiện menu
   const sidebar = document.getElementById("sidebar");
   const toggleBtn = document.getElementById("toggleSidebar");
   toggleBtn.addEventListener("click", () => {
@@ -500,18 +1006,181 @@
     toggleBtn.textContent = sidebar.classList.contains("collapsed") ? "⯈" : "⯇";
   });
 
-  // Xử lý chuyển tab (Tính doanh số / Tính chi phí)
-  document.getElementById("btnTinhDoanhSo").addEventListener("click", () => {
-    document.getElementById("tinhDoanhSoSection").style.display = "block";
-    document.getElementById("tinhChiPhiSection").style.display = "none";
-    document.getElementById("btnTinhDoanhSo").classList.add("active");
-    document.getElementById("btnTinhChiPhi").classList.remove("active");
+  // Ẩn/hiện bảng tổng hợp
+  const summaryTableContainer = document.getElementById("summaryTableContainer");
+  const toggleSummaryTable = document.getElementById("toggleSummaryTable");
+  toggleSummaryTable.addEventListener("click", () => {
+    if (summaryTableContainer.style.display === "none") {
+      summaryTableContainer.style.display = "block";
+      toggleSummaryTable.textContent = "▼";
+    } else {
+      summaryTableContainer.style.display = "none";
+      toggleSummaryTable.textContent = "▲";
+    }
   });
-  document.getElementById("btnTinhChiPhi").addEventListener("click", () => {
-    document.getElementById("tinhDoanhSoSection").style.display = "none";
-    document.getElementById("tinhChiPhiSection").style.display = "block";
-    document.getElementById("btnTinhDoanhSo").classList.remove("active");
-    document.getElementById("btnTinhChiPhi").classList.add("active");
+
+  // Ẩn/hiện bảng đơn hàng
+  const ordersTableContainer = document.getElementById("ordersTableContainer");
+  const ordersTableFilterBar = document.getElementById("ordersTableFilterBar");
+  const toggleOrdersTable = document.getElementById("toggleOrdersTable");
+  toggleOrdersTable.addEventListener("click", () => {
+    if (ordersTableContainer.style.display === "none") {
+      ordersTableContainer.style.display = "block";
+      ordersTableFilterBar.style.display = "block";
+      toggleOrdersTable.textContent = "▼";
+    } else {
+      ordersTableContainer.style.display = "none";
+      ordersTableFilterBar.style.display = "none";
+      toggleOrdersTable.textContent = "▲";
+    }
+  });
+
+  // Ẩn/hiện bảng chi phí sàn
+  const platformCostTableContainer = document.getElementById("platformCostTableContainer");
+  const togglePlatformCostTable = document.getElementById("togglePlatformCostTable");
+  togglePlatformCostTable.addEventListener("click", () => {
+    if (platformCostTableContainer.style.display === "none") {
+      platformCostTableContainer.style.display = "block";
+      togglePlatformCostTable.textContent = "▼";
+    } else {
+      platformCostTableContainer.style.display = "none";
+      togglePlatformCostTable.textContent = "▲";
+    }
+  });
+
+  // Ẩn/hiện bảng chi phí tổng hợp
+  const costSummaryTableContainer = document.getElementById("costSummaryTableContainer");
+  const toggleCostSummaryTable = document.getElementById("toggleCostSummaryTable");
+  toggleCostSummaryTable.addEventListener("click", () => {
+    if (costSummaryTableContainer.style.display === "none") {
+      costSummaryTableContainer.style.display = "block";
+      toggleCostSummaryTable.textContent = "▼";
+    } else {
+      costSummaryTableContainer.style.display = "none";
+      toggleCostSummaryTable.textContent = "▲";
+    }
+  });
+
+  // Sự kiện filter Giá ưu đãi
+  document.getElementById("giaUuDaiFilter").addEventListener("change", renderTables);
+
+  // Sự kiện nhập Chi phí FLsale
+  document.getElementById("ordersTable").addEventListener("input", function(e) {
+    if (e.target.classList.contains("flsale-input")) {
+      const maDon = e.target.getAttribute("data-madon");
+      flSaleCosts.set(maDon, Number(e.target.value));
+    }
+  });
+
+  // Sự kiện lưu Chi phí FLsale
+  document.getElementById("saveFlSaleBtn").addEventListener("click", function() {
+    let count = 0;
+    for (const [maDon, cost] of flSaleCosts.entries()) {
+      if (dataOrders.has(maDon)) {
+        dataOrders.get(maDon).flSaleCost = cost;
+        count++;
+      }
+    }
+    flSaleCosts.clear();
+    renderTables();
+    showToast(`Đã lưu ${count} Chi phí FLsale!`, "success");
+  });
+
+  // Sự kiện áp dụng hàng loạt
+  document.getElementById("applyBatchFlSaleBtn").addEventListener("click", function() {
+    const value = Number(document.getElementById("batchFlSaleInput").value);
+    if (isNaN(value) || value < 0) {
+      showToast("Vui lòng nhập số hợp lệ cho Chi phí FLsale!", "error");
+      return;
+    }
+    let count = 0;
+    document.querySelectorAll(".order-checkbox:checked").forEach(cb => {
+      const maDon = cb.getAttribute("data-madon");
+      if (dataOrders.has(maDon)) {
+        dataOrders.get(maDon).flSaleCost = value;
+        count++;
+      }
+    });
+    renderTables();
+    showToast(`Đã áp dụng cho ${count} đơn hàng!`, "success");
+  });
+
+  // Sự kiện tìm kiếm từng cột
+  document.getElementById("ordersTableSearchRow").addEventListener("input", function(e) {
+    if (e.target.classList.contains("search-col")) {
+      const col = e.target.getAttribute("data-col");
+      ordersTableColFilters[col] = e.target.value.trim().toLowerCase();
+      renderTables();
+    }
+  });
+
+  // Hàm lấy chi phí combo ghép từ SKU phân loại hàng
+  function getBundledProductCost(sku) {
+    if (!sku) return 0;
+    // Tìm pattern COMBO/.../số
+    const comboMatch = sku.match(/COMBO[\/\w-]*\/(\d+)$/i);
+    if (comboMatch && comboMatch[1]) {
+      return Number(comboMatch[1]);
+    }
+    // Tìm pattern COMBO/.../số ở cuối
+    const lastNum = sku.match(/\/(\d+)$/);
+    if (lastNum) return Number(lastNum[1]);
+    return 0;
+  }
+
+  // Sự kiện checkbox tất cả
+  document.getElementById("selectAllOrders").addEventListener("change", function(e) {
+    const checked = e.target.checked;
+    document.querySelectorAll(".order-checkbox").forEach(cb => { cb.checked = checked; });
+  });
+
+  // Sự kiện debug
+  document.getElementById("debugBtn").addEventListener("click", function() {
+    console.log("=== DEBUG INFO ===");
+    console.log(`Tổng số đơn hàng: ${dataOrders.size}`);
+    console.log(`Tổng số đơn AFF: ${affOrders.length}`);
+    
+    // Thống kê theo shop
+    const shopStats = {};
+    for (const order of dataOrders.values()) {
+      if (!shopStats[order.shop]) {
+        shopStats[order.shop] = {
+          total: 0,
+          donThat: 0,
+          donAo: 0,
+          trangThaiHopLe: 0,
+          biHoanTra: 0
+        };
+      }
+      shopStats[order.shop].total++;
+      
+      if (order.loaiDon === "Đơn thật") {
+        shopStats[order.shop].donThat++;
+      } else {
+        shopStats[order.shop].donAo++;
+      }
+      
+      const trangThaiHopLe = validOrderStatuses.includes(order.trangThai) || regexConfirmedReceived.test(order.trangThai);
+      const isTraHangHoanTien = rejectReturnStatuses.includes(order.trangThaiTraHangHoanTien);
+      
+      if (trangThaiHopLe) {
+        shopStats[order.shop].trangThaiHopLe++;
+      }
+      if (isTraHangHoanTien) {
+        shopStats[order.shop].biHoanTra++;
+      }
+    }
+    
+    console.log("Thống kê theo shop:");
+    for (const shop in shopStats) {
+      const stats = shopStats[shop];
+      console.log(`${shop}: Tổng ${stats.total}, Đơn thật ${stats.donThat}, Đơn ảo ${stats.donAo}, Trạng thái hợp lệ ${stats.trangThaiHopLe}, Bị hoàn trả ${stats.biHoanTra}`);
+    }
+    
+    // Hiển thị toast với thông tin tổng quan
+    const totalOrders = dataOrders.size;
+    const totalAff = affOrders.length;
+    showToast(`Debug: ${totalOrders} đơn hàng, ${totalAff} đơn AFF. Xem Console để biết chi tiết.`, "success");
   });
 </script>
 </body>
