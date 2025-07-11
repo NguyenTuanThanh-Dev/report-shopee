@@ -496,12 +496,7 @@
           let phiDichVu = parseFloat(getColValue(row, "Phí dịch vụ", "Phí Dịch Vụ") || 0);
           let phiThanhToan = parseFloat(getColValue(row, "Phí thanh toán") || 0);
 
-          // Nếu mã đơn đã tồn tại thì bỏ qua (chỉ lấy dòng đầu tiên)
-          if (dataOrders.has(maDonHang)) {
-            continue;
-          }
-
-          // Chỉ thêm mới, không update
+          // Luôn ghi đè dữ liệu theo mã đơn hàng
           dataOrders.set(maDonHang, {
             shop,
             maDonHang,
