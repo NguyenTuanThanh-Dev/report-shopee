@@ -421,6 +421,8 @@
 
   // Xử lý import file excel
   document.getElementById("importBtn").addEventListener("click", () => {
+    // Xóa dữ liệu cũ
+    dataOrders.clear();
     const fileInput = document.getElementById("fileInput");
     if (!fileInput.files.length) {
       showToast("Vui lòng chọn file Excel để import!", "error");
@@ -461,10 +463,10 @@
           let shopeeXuHoan = parseFloat(row["Shopee Xu được hoàn"] || 0);
           let doanhSo = loaiDon === "Đơn ảo" ? 0 : (tongGiaTri + maGiamGiaShopee + giamGiaComboShopee + shopeeXuHoan * 100);
 
-          // Nếu trạng thái trả hàng/hoàn tiền là 1 trong 3 giá trị đặc biệt thì doanh số = 0
-          if (["Đã Chấp Thuận Yêu Cầu", "Yêu cầu chờ xử lý", "Đã giải quyết khiếu nại"].includes(trangThaiTraHangHoanTien)) {
-            doanhSo = 0;
-          }
+          // XÓA ĐI ĐIỀU KIỆN NÀY:
+          // if (["Đã Chấp Thuận Yêu Cầu", "Yêu cầu chờ xử lý", "Đã giải quyết khiếu nại"].includes(trangThaiTraHangHoanTien)) {
+          //   doanhSo = 0;
+          // }
 
           const maVanDon = String(row["Mã vận đơn"] || "").trim();
           const sku = String(row["SKU phân loại hàng"] || "");
