@@ -437,8 +437,7 @@
 
   // Xử lý import file excel
   document.getElementById("importBtn").addEventListener("click", () => {
-    // Xóa dữ liệu cũ
-    dataOrders.clear();
+    // Không xóa dữ liệu cũ để có thể update/ghi đè theo mã đơn hàng
     const fileInput = document.getElementById("fileInput");
     if (!fileInput.files.length) {
       showToast("Vui lòng chọn file Excel để import!", "error");
