@@ -485,7 +485,12 @@
 
           const maVanDon = String(row["Mã vận đơn"] || "").trim();
           const sku = String(row["SKU phân loại hàng"] || "");
-          const comboCost = getBundledProductCost(sku);
+          let comboCost = getBundledProductCost(sku);
+          
+          // Đối với đơn ảo, comboCost = 0
+          if (loaiDon === "Đơn ảo") {
+            comboCost = 0;
+          }
 
           // Lấy giá ưu đãi trực tiếp từ cột "Giá ưu đãi" trong file excel
           let giaUuDai = row["Giá ưu đãi"];
@@ -493,6 +498,12 @@
           // Lấy thêm các trường cần thiết cho tính toán chi phí
           let maGiamGiaShop = parseFloat(row["Mã giảm giá của Shop"] || 0);
           let giamGiaComboShop = parseFloat(row["Giảm giá từ combo của Shop"] || 0);
+          
+          // Đối với đơn ảo, các chi phí sẽ được set = 0
+          if (loaiDon === "Đơn ảo") {
+            maGiamGiaShop = 0;
+            giamGiaComboShop = 0;
+          }
           
           // Hàm lấy giá trị cột bất kể hoa thường, dấu cách
           function getColValue(row, ...possibleNames) {
@@ -615,9 +626,15 @@
   });
 
   const formatVND = v => {
-  let num = typeof v === 'number' ? v : (typeof v === 'string' && v !== '' && !isNaN(Number(v.replace(/,/g, '')))) ? Number(v.replace(/,/g, '')) : null;
-  return num !== null ? num.toLocaleString('vi-VN', {style: 'currency', currency: 'VND', minimumFractionDigits: 0}) : v;
-};
+    let num = typeof v === 'number' ? v : (typeof v === 'string' && v !== '' && !isNaN(Number(v.replace(/,/g, '')))) ? Number(v.replace(/,/g, '')) : null;
+    return num !== null ? num.toLocaleString('vi-VN', {style: 'currency', currency: 'VND', minimumFractionDigits: 0}) : v;
+  };
+
+  // Hàm format số thành VNĐ không có ký hiệu tiền tệ
+  const formatNumberVND = v => {
+    let num = typeof v === 'number' ? v : (typeof v === 'string' && v !== '' && !isNaN(Number(v.replace(/,/g, '')))) ? Number(v.replace(/,/g, '')) : null;
+    return num !== null ? num.toLocaleString('vi-VN') : v;
+  };
 
   // Đổi filter Doanh số thành filter Giá ưu đãi
   // Format cho filter dropdown
@@ -718,11 +735,11 @@
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${shop}</td>
-        <td>${s.tongDoanhSoDonThat.toLocaleString()}</td>
-        <td>${s.doanhSoThucTe.toLocaleString()}</td>
-        <td>${doanhSoHoanHuy.toLocaleString()}</td>
-        <td>${s.doanhSoHuy.toLocaleString()}</td>
-        <td>${s.doanhSoHoan.toLocaleString()}</td>
+        <td>${formatVND(s.tongDoanhSoDonThat)}</td>
+        <td>${formatVND(s.doanhSoThucTe)}</td>
+        <td>${formatVND(doanhSoHoanHuy)}</td>
+        <td>${formatVND(s.doanhSoHuy)}</td>
+        <td>${formatVND(s.doanhSoHoan)}</td>
         <td>${tyLeHuy}%</td>
         <td>${tyLeHoan}%</td>
       `;
@@ -737,11 +754,11 @@
     const tyLeHoanTotal = totalSummary.tongDoanhSoDonThat > 0 ? ((totalSummary.doanhSoHoan / totalSummary.tongDoanhSoDonThat) * 100).toFixed(2) : "0.00";
     trTotalSummary.innerHTML = `
       <td><strong>TỔNG</strong></td>
-      <td><strong>${totalSummary.tongDoanhSoDonThat.toLocaleString()}</strong></td>
-      <td><strong>${totalSummary.doanhSoThucTe.toLocaleString()}</strong></td>
-      <td><strong>${totalSummary.doanhSoHoanHuy.toLocaleString()}</strong></td>
-      <td><strong>${totalSummary.doanhSoHuy.toLocaleString()}</strong></td>
-      <td><strong>${totalSummary.doanhSoHoan.toLocaleString()}</strong></td>
+      <td><strong>${formatVND(totalSummary.tongDoanhSoDonThat)}</strong></td>
+      <td><strong>${formatVND(totalSummary.doanhSoThucTe)}</strong></td>
+      <td><strong>${formatVND(totalSummary.doanhSoHoanHuy)}</strong></td>
+      <td><strong>${formatVND(totalSummary.doanhSoHuy)}</strong></td>
+      <td><strong>${formatVND(totalSummary.doanhSoHoan)}</strong></td>
       <td><strong>${tyLeHuyTotal}%</strong></td>
       <td><strong>${tyLeHoanTotal}%</strong></td>
     `;
@@ -764,7 +781,7 @@
       if (ordersTableColFilters.flSaleCost && !(typeof order.flSaleCost !== 'undefined' && order.flSaleCost.toString().includes(ordersTableColFilters.flSaleCost))) continue;
       if (ordersTableColFilters.comboCost && !(typeof order.comboCost !== 'undefined' && order.comboCost.toString().includes(ordersTableColFilters.comboCost))) continue;
       if (ordersTableColFilters.giaUuDai && !(typeof order.giaUuDai !== 'undefined' && order.giaUuDai.toString().includes(ordersTableColFilters.giaUuDai))) continue;
-      const formatNumber = v => (typeof v === 'number' && !isNaN(v)) ? v.toLocaleString('vi-VN') : (typeof v === 'string' && v !== '' && !isNaN(Number(v))) ? Number(v).toLocaleString('vi-VN') : v;
+      const formatNumber = v => formatNumberVND(v);
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><input type="checkbox" class="order-checkbox" data-madon="${order.maDonHang}"></td>
@@ -850,7 +867,9 @@ function renderCostTables() {
     costSummary[order.shop].maGiamGiaShop += order.maGiamGiaShop || 0;
     costSummary[order.shop].giamGiaComboShop += order.giamGiaComboShop || 0;
     costSummary[order.shop].giamGiaComboGhep += order.comboCost || 0;
-    costSummary[order.shop].chiPhiFLsale += order.flSaleCost || 0;
+    // Đối với đơn ảo, chi phí FLsale = 0
+    const flSaleCostForCalculation = (order.loaiDon === "Đơn ảo") ? 0 : (order.flSaleCost || 0);
+    costSummary[order.shop].chiPhiFLsale += flSaleCostForCalculation;
     
     // Cộng dồn các phí từ Excel (không quan tâm trạng thái đơn hàng)
     costSummary[order.shop].phiCoDinh += order.phiCoDinh || 0;
