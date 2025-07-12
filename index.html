@@ -577,17 +577,12 @@
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
-        // Map để chỉ lưu dòng đầu tiên cho mỗi mã đơn hàng
+        // Map để cộng dồn chi phí và ghi đè dữ liệu mới nhất cho mỗi mã đơn hàng
         const affOrderMap = new Map();
         for (const row of jsonData) {
           // Lấy các trường cần thiết
           const maDonHang = String(row["Mã đơn hàng"] || "").trim();
           if (!maDonHang) continue; // Bỏ dòng không có mã đơn
-          
-          // Nếu mã đơn đã tồn tại thì bỏ qua (chỉ lấy dòng đầu tiên)
-          if (affOrderMap.has(maDonHang)) {
-            continue;
-          }
           
           const trangThaiDonHang = String(row["Trạng thái đơn hàng"] || "").trim();
           const trangThaiGianLan = String(row["Trạng thái gian lận"] || "").trim();
@@ -596,22 +591,38 @@
           const kenh = String(row["Kênh"] || "").trim();
           const chiPhiRaw = row["Chi phí(₫)"];
           const trangThaiKhauTru = String(row["Trạng thái khấu trừ"] || "").trim();
+          
           // Tính chi phí
           let chiPhi = 0;
           if (["Trừ tiền chờ xử lý", "Đã khấu trừ"].includes(trangThaiKhauTru)) {
             chiPhi = typeof chiPhiRaw === 'number' ? chiPhiRaw : (typeof chiPhiRaw === 'string' && chiPhiRaw !== '' && !isNaN(Number(chiPhiRaw.replace(/,/g, '')))) ? Number(chiPhiRaw.replace(/,/g, '')) : 0;
           }
-          affOrderMap.set(maDonHang, {
-            shop,
-            maDonHang,
-            trangThaiDonHang,
-            trangThaiGianLan,
-            taiKhoanTTLK,
-            mcnDuocLienKet,
-            kenh,
-            chiPhi,
-            trangThaiKhauTru
-          });
+          
+          // Nếu mã đơn đã tồn tại thì cộng dồn chi phí và ghi đè thông tin mới nhất
+          if (affOrderMap.has(maDonHang)) {
+            const existingOrder = affOrderMap.get(maDonHang);
+            existingOrder.chiPhi += chiPhi;
+            // Ghi đè thông tin khác bằng dữ liệu mới nhất
+            existingOrder.trangThaiDonHang = trangThaiDonHang;
+            existingOrder.trangThaiGianLan = trangThaiGianLan;
+            existingOrder.taiKhoanTTLK = taiKhoanTTLK;
+            existingOrder.mcnDuocLienKet = mcnDuocLienKet;
+            existingOrder.kenh = kenh;
+            existingOrder.trangThaiKhauTru = trangThaiKhauTru;
+          } else {
+            // Nếu chưa có thì tạo mới
+            affOrderMap.set(maDonHang, {
+              shop,
+              maDonHang,
+              trangThaiDonHang,
+              trangThaiGianLan,
+              taiKhoanTTLK,
+              mcnDuocLienKet,
+              kenh,
+              chiPhi,
+              trangThaiKhauTru
+            });
+          }
         }
         affOrders = Array.from(affOrderMap.values());
         renderAffTable();
