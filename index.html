@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <title>Phần mềm Tính Doanh Số - VQF</title>
+  <title>Phần mềm Tính Doanh Số Shopee - VQF</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     /* Reset & cơ bản */
@@ -190,6 +190,16 @@
       from {opacity: 0; transform: translateX(100%);}
       to {opacity: 1; transform: translateX(0);}
     }
+
+    /* Highlight bảng tổng hợp Tiktok */
+    #tiktokTotalSummaryTable tr, #tiktokTotalSummaryTable th, #tiktokTotalSummaryTable td {
+      background-color: #004080 !important;
+      color: white;
+    }
+    /* Highlight dòng duplicate Order ID trong bảng chi tiết Tiktok */
+    #tiktokSummaryTable tr.duplicate-order {
+      background-color: #FFB6C1 !important;
+    }
   </style>
 </head>
 <body>
@@ -197,15 +207,16 @@
   <aside id="sidebar">
     <div class="logo">VQF</div>
     <nav>
-      <button id="btnTinhDoanhSo" class="active"><span class="text">Tính Doanh Số</span></button>
+      <button id="btnTinhDoanhSoShopee" class="active"><span class="text">Tính Doanh Số Shopee</span></button>
+      <button id="btnTinhDoanhThuTiktok"><span class="text">Tính Doanh thu Tiktok</span></button>
     </nav>
     <button id="toggleSidebar" title="Ẩn/Hiện menu">⯈</button>
   </aside>
 
   <main id="mainContent">
-    <h1>Phần mềm Tính Doanh Số - VQF</h1>
+    <h1>Phần mềm Tính Doanh Số Shopee - VQF</h1>
 
-    <div id="tinhDoanhSoSection">
+    <div id="tinhDoanhSoShopeeSection">
       <label for="shopSelect">Chọn Shop:</label>
       <select id="shopSelect">
         <option value="Elwyn">Elwyn</option>
@@ -375,6 +386,72 @@
       </div>
 
 
+    </div>
+    <div id="tinhDoanhThuTiktokSection" style="display:none;">
+      <label for="shopSelectTiktok">Chọn Shop:</label>
+      <select id="shopSelectTiktok">
+        <option value="Elwyn">Elwyn</option>
+        <option value="Melina">Melina</option>
+        <option value="caboxin.official">caboxin.official</option>
+        <option value="chipbongjp">chipbongjp</option>
+        <option value="dandongkhe">dandongkhe</option>
+        <option value="dungdungnguyen92.cg_hd">dungdungnguyen92.cg_hd</option>
+        <option value="genjeann">genjeann</option>
+        <option value="melajeans">melajeans</option>
+        <option value="tdfashion_vnxk">tdfashion_vnxk</option>
+        <option value="tdmen_vnxk">tdmen_vnxk</option>
+        <option value="thuyvoi">thuyvoi</option>
+        <option value="teemeejean">teemeejean</option>
+        <option value="trendjeanss">trendjeanss</option>
+        <option value="nhajean">nhajean</option>
+        <option value="lilianastoree">lilianastoree</option>
+        <option value="nirajean">nirajean</option>
+        <option value="jeantini">jeantini</option>
+        <option value="tdkiddo">tdkiddo</option>
+      </select>
+      <label for="loaiDonSelectTiktok" style="margin-left:30px;">Chọn Loại Đơn:</label>
+      <select id="loaiDonSelectTiktok">
+        <option value="Đơn thật">Đơn thật</option>
+        <option value="Đơn ảo">Đơn ảo</option>
+      </select>
+      <br />
+      <input type="file" id="fileInputTiktok" accept=".xls,.xlsx,.csv" />
+      <button class="import-btn" id="importBtnTiktok">Import Đơn Tiktok</button>
+      <div class="table-container" id="tiktokSummaryTableContainer" style="margin-top:30px;">
+        <h2>Bảng Tính Tổng Hợp Doanh Số</h2>
+        <table id="tiktokTotalSummaryTable">
+          <thead>
+            <tr>
+              <th>Shop</th>
+              <th>Doanh số (Đơn thật)</th>
+              <th>Doanh số thực tế</th>
+              <th>Doanh số Hoàn/Hủy</th>
+              <th>Doanh số Đơn Hủy</th>
+              <th>Doanh số Đơn Hoàn</th>
+              <th>Tỷ lệ Hủy (%)</th>
+              <th>Tỷ lệ Hoàn (%)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <!-- Bảng chi tiết sản phẩm Tiktok -->
+        <table id="tiktokSummaryTable" style="width:100%; display:none; margin-top:30px;">
+          <thead>
+            <tr>
+              <th>Shop</th>
+              <th>Mã Đơn Hàng</th>
+              <th>Trạng Thái</th>
+              <th>Trạng Thái Trả hàng/Hoàn tiền</th>
+              <th>Giá bán sản phẩm</th>
+              <th>Mã giảm giá Tiktok</th>
+              <th>Mã giảm giá Shop</th>
+              <th>Doanh số</th>
+              <th>Tiền hoàn</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
 
   </main>
@@ -634,6 +711,82 @@
     reader.readAsArrayBuffer(file);
   });
 
+  // --- Biến lưu trữ dữ liệu Tiktok ---
+  const tiktokOrders = [];
+
+  // Xử lý import file excel Tiktok
+  document.getElementById("importBtnTiktok").addEventListener("click", () => {
+    const fileInput = document.getElementById("fileInputTiktok");
+    if (!fileInput.files.length) {
+      showToast("Vui lòng chọn file Excel Tiktok để import!", "error");
+      return;
+    }
+    const shop = document.getElementById("shopSelectTiktok").value;
+    const loaiDon = document.getElementById("loaiDonSelectTiktok").value;
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type:"array"});
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
+        // Không xóa tiktokOrders, chỉ update hoặc thêm mới theo Order ID
+        for (const row of jsonData) {
+          const orderId = String(row["Order ID"] || "").trim();
+          if (!orderId) continue;
+          const orderStatus = String(row["Order Status"] || "").trim();
+          const returnType = String(row["Cancelation/Return Type"] || "").trim();
+          const sku = String(row["SKU ID"] || "");
+          const productName = String(row["Product Name"] || "");
+          const price = parseFloat(row["SKU Subtotal After Discount"] || 0);
+          const tiktokDiscount = parseFloat(row["SKU Platform Discount"] || 0);
+          const shopDiscount = parseFloat(row["SKU Seller Discount"] || 0);
+          const refundAmount = parseFloat(row["Order Refund Amount"] || 0);
+          let doanhSo = 0;
+          if (loaiDon === "Đơn thật") {
+            doanhSo = price + tiktokDiscount;
+          }
+          if (loaiDon === "Đơn ảo") {
+            doanhSo = 0;
+          }
+          const newOrder = {
+            shop,
+            orderId,
+            orderStatus,
+            returnType,
+            sku,
+            productName,
+            price,
+            tiktokDiscount,
+            shopDiscount,
+            doanhSo,
+            refundAmount,
+            loaiDon
+          };
+          // Nếu là đơn ảo, xóa tất cả dòng đơn thật cùng Order ID trước khi thêm
+          if (loaiDon === "Đơn ảo") {
+            for (let i = tiktokOrders.length - 1; i >= 0; i--) {
+              if (tiktokOrders[i].orderId === orderId && tiktokOrders[i].loaiDon === "Đơn thật") {
+                tiktokOrders.splice(i, 1);
+              }
+            }
+          }
+          tiktokOrders.push(newOrder);
+        }
+        // Sau khi cập nhật dữ liệu, luôn render lại bảng tổng hợp và chi tiết
+        renderTiktokTable();
+        showToast(`Import thành công: ${jsonData.length} dòng sản phẩm Tiktok!`, "success");
+        fileInput.value = "";
+      } catch (err) {
+        console.error(err);
+        showToast("Lỗi khi đọc file Excel Tiktok. Vui lòng kiểm tra file và thử lại.", "error");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
   const formatVND = v => {
     let num = typeof v === 'number' ? v : (typeof v === 'string' && v !== '' && !isNaN(Number(v.replace(/,/g, '')))) ? Number(v.replace(/,/g, '')) : null;
     return num !== null ? num.toLocaleString('vi-VN', {style: 'currency', currency: 'VND', minimumFractionDigits: 0}) : v;
@@ -707,13 +860,19 @@
       }
 
       // Doanh số đơn hủy
-      if (order.trangThai === "Đã hủy") {
-        s.doanhSoHuy += order.doanhSo;
-      }
-
-      // Doanh số đơn hoàn
-      if (rejectReturnStatuses.includes(order.trangThaiTraHangHoanTien)) {
-        s.doanhSoHoan += order.doanhSo;
+      if (order.loaiDon === "Đơn thật") {
+        // Đơn Hủy
+        if (normalizeStatus(order.orderStatus).includes("hủy")) {
+          s.doanhSoHuy += order.doanhSo;
+        }
+        // Đơn Hoàn (chỉ khi KHÔNG phải Đã hủy)
+        else if (order.returnType === "Return/Refund") {
+          s.doanhSoHoan += order.doanhSo;
+        }
+        // Tiền hoàn (chỉ khi KHÔNG phải Đã hủy)
+        if (order.refundAmount > 0 && !normalizeStatus(order.orderStatus).includes("hủy")) {
+          s.doanhSoHoan += order.refundAmount;
+        }
       }
     }
 
@@ -1038,12 +1197,163 @@ function renderCostTables() {
   tbodyPlatformCost.appendChild(trTotalPlatform);
 }
 
-// Xử lý ẩn/hiện menu
+  // Hàm render bảng Tiktok
+  function renderTiktokTable() {
+    const table = document.getElementById("tiktokSummaryTable");
+    const tbody = table.querySelector("tbody");
+    tbody.innerHTML = "";
+    if (tiktokOrders.length === 0) {
+      table.style.display = "none";
+      renderTiktokTotalSummaryTable();
+      return;
+    }
+    table.style.display = "table";
+    // Đếm số lần xuất hiện của mỗi Order ID
+    const orderIdCount = {};
+    for (const order of tiktokOrders) {
+      orderIdCount[order.orderId] = (orderIdCount[order.orderId] || 0) + 1;
+    }
+    for (const order of tiktokOrders) {
+      const tr = document.createElement("tr");
+      if (orderIdCount[order.orderId] > 1) {
+        tr.classList.add("duplicate-order");
+      }
+      tr.innerHTML = `
+        <td>${order.shop}</td>
+        <td>${order.orderId}</td>
+        <td>${order.orderStatus}</td>
+        <td>${order.returnType}</td>
+        <td>${formatVND(order.price)}</td>
+        <td>${formatVND(order.tiktokDiscount)}</td>
+        <td>${formatVND(order.shopDiscount)}</td>
+        <td>${formatVND(order.doanhSo)}</td>
+        <td>${
+          (order.refundAmount > 0 && !normalizeStatus(order.orderStatus).includes('hủy'))
+            ? formatVND(order.refundAmount)
+            : ''
+        }</td>
+      `;
+      tbody.appendChild(tr);
+    }
+    // Tổng hợp theo shop
+    renderTiktokTotalSummaryTable();
+  }
+
+  // Hàm render bảng tổng hợp doanh số Tiktok
+  function renderTiktokTotalSummaryTable() {
+    const tbody = document.querySelector("#tiktokTotalSummaryTable tbody");
+    tbody.innerHTML = "";
+    if (tiktokOrders.length === 0) return;
+    // Tổng hợp theo shop
+    const summary = {};
+    for (const order of tiktokOrders) {
+      if (!summary[order.shop]) {
+        summary[order.shop] = {
+          tongDoanhSoDonThat: 0,
+          doanhSoThucTe: 0,
+          doanhSoHuy: 0,
+          doanhSoHoan: 0
+        };
+      }
+      const s = summary[order.shop];
+      // Tổng doanh số đơn thật
+      if (order.loaiDon === "Đơn thật") {
+        s.tongDoanhSoDonThat += order.doanhSo;
+      }
+      // Đơn hợp lệ để tính doanh số thực tế
+      const trangThaiHopLe = ["Đã hoàn tất", "Đã vận chuyển"].includes(order.orderStatus);
+      const isReturn = order.returnType === "Return/Refund";
+      if (order.loaiDon === "Đơn thật" && trangThaiHopLe && !isReturn) {
+        s.doanhSoThucTe += order.doanhSo;
+      }
+      // Đơn Hủy
+      if (order.loaiDon === "Đơn thật" && normalizeStatus(order.orderStatus).includes("hủy")) {
+        s.doanhSoHuy += order.doanhSo;
+      }
+      // Doanh số Đơn Hoàn: chỉ cộng SUM của Order Refund Amount
+      if (
+        order.loaiDon === "Đơn thật" &&
+        order.refundAmount > 0 &&
+        !normalizeStatus(order.orderStatus).includes("hủy")
+      ) {
+        s.doanhSoHoan += order.refundAmount;
+      }
+    }
+    // Render từng shop
+    let total = {
+      tongDoanhSoDonThat: 0,
+      doanhSoThucTe: 0,
+      doanhSoHoanHuy: 0,
+      doanhSoHuy: 0,
+      doanhSoHoan: 0
+    };
+    for (const shop in summary) {
+      const s = summary[shop];
+      const doanhSoHoanHuy = s.doanhSoHuy + s.doanhSoHoan;
+      const tyLeHuy = s.tongDoanhSoDonThat > 0 ? ((s.doanhSoHuy / s.tongDoanhSoDonThat) * 100).toFixed(2) : "0.00";
+      const tyLeHoan = s.tongDoanhSoDonThat > 0 ? ((s.doanhSoHoan / s.tongDoanhSoDonThat) * 100).toFixed(2) : "0.00";
+      total.tongDoanhSoDonThat += s.tongDoanhSoDonThat;
+      total.doanhSoThucTe += s.doanhSoThucTe;
+      total.doanhSoHoanHuy += doanhSoHoanHuy;
+      total.doanhSoHuy += s.doanhSoHuy;
+      total.doanhSoHoan += s.doanhSoHoan;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${shop}</td>
+        <td>${formatVND(s.tongDoanhSoDonThat)}</td>
+        <td>${formatVND(s.doanhSoThucTe)}</td>
+        <td>${formatVND(doanhSoHoanHuy)}</td>
+        <td>${formatVND(s.doanhSoHuy)}</td>
+        <td>${formatVND(s.doanhSoHoan)}</td>
+        <td>${tyLeHuy}%</td>
+        <td>${tyLeHoan}%</td>
+      `;
+      tbody.appendChild(tr);
+    }
+    // Dòng tổng cộng
+    const tyLeHuyTotal = total.tongDoanhSoDonThat > 0 ? ((total.doanhSoHuy / total.tongDoanhSoDonThat) * 100).toFixed(2) : "0.00";
+    const tyLeHoanTotal = total.tongDoanhSoDonThat > 0 ? ((total.doanhSoHoan / total.tongDoanhSoDonThat) * 100).toFixed(2) : "0.00";
+    const doanhSoHoanHuyTotal = total.doanhSoHuy + total.doanhSoHoan;
+    const trTotal = document.createElement("tr");
+    trTotal.style.fontWeight = "bold";
+    trTotal.style.backgroundColor = "#f0f0f0";
+    trTotal.innerHTML = `
+      <td><strong>TỔNG</strong></td>
+      <td><strong>${formatVND(total.tongDoanhSoDonThat)}</strong></td>
+      <td><strong>${formatVND(total.doanhSoThucTe)}</strong></td>
+      <td><strong>${formatVND(doanhSoHoanHuyTotal)}</strong></td>
+      <td><strong>${formatVND(total.doanhSoHuy)}</strong></td>
+      <td><strong>${formatVND(total.doanhSoHoan)}</strong></td>
+      <td><strong>${tyLeHuyTotal}%</strong></td>
+      <td><strong>${tyLeHoanTotal}%</strong></td>
+    `;
+    tbody.appendChild(trTotal);
+  }
+
+  // Xử lý ẩn/hiện menu
   const sidebar = document.getElementById("sidebar");
   const toggleBtn = document.getElementById("toggleSidebar");
   toggleBtn.addEventListener("click", () => {
     sidebar.classList.toggle("collapsed");
     toggleBtn.textContent = sidebar.classList.contains("collapsed") ? "⯈" : "⯇";
+  });
+
+  // Chuyển đổi giữa Shopee và Tiktok
+  const btnShopee = document.getElementById("btnTinhDoanhSoShopee");
+  const btnTiktok = document.getElementById("btnTinhDoanhThuTiktok");
+  const sectionShopee = document.getElementById("tinhDoanhSoShopeeSection");
+  const sectionTiktok = document.getElementById("tinhDoanhThuTiktokSection");
+  btnShopee.addEventListener("click", () => {
+    btnShopee.classList.add("active");
+    btnTiktok.classList.remove("active");
+    sectionShopee.style.display = "block";
+    sectionTiktok.style.display = "none";
+  });
+  btnTiktok.addEventListener("click", () => {
+    btnTiktok.classList.add("active");
+    btnShopee.classList.remove("active");
+    sectionShopee.style.display = "none";
+    sectionTiktok.style.display = "block";
   });
 
   // Ẩn/hiện bảng tổng hợp
@@ -1222,6 +1532,10 @@ function renderCostTables() {
     const totalAff = affOrders.length;
     showToast(`Debug: ${totalOrders} đơn hàng, ${totalAff} đơn AFF. Xem Console để biết chi tiết.`, "success");
   });
+
+  function normalizeStatus(str) {
+    return (str || '').toLowerCase().replace(/đã h[ủy|uỷ]/g, 'đã hủy').trim();
+  }
 </script>
 </body>
 </html>
