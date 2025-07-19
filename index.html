@@ -208,7 +208,7 @@
     <div class="logo">VQF</div>
     <nav>
       <button id="btnTinhDoanhSoShopee" class="active"><span class="text">Tính Doanh Số Shopee</span></button>
-      <button id="btnTinhDoanhThuTiktok"><span class="text">Tính Doanh thu Tiktok</span></button>
+      <button id="btnTinhDoanhThuTiktok"><span class="text">Tính Doanh số Tiktok</span></button>
       <button id="btnDashboardAffTiktok"><span class="text">Dashboard AFF Tiktok</span></button>
     </nav>
     <button id="toggleSidebar" title="Ẩn/Hiện menu">⯈</button>
@@ -1131,25 +1131,31 @@ function renderCostTables() {
     costSummary[order.shop].totalOrders++;
     platformCost[order.shop].totalOrders++;
 
-    // Cộng dồn các chi phí
-    costSummary[order.shop].maGiamGiaShop += order.maGiamGiaShop || 0;
-    costSummary[order.shop].giamGiaComboShop += order.giamGiaComboShop || 0;
-    costSummary[order.shop].giamGiaComboGhep += order.comboCost || 0;
-    // Đối với đơn ảo, chi phí FLsale = 0
-    const flSaleCostForCalculation = (order.loaiDon === "Đơn ảo") ? 0 : (order.flSaleCost || 0);
-    costSummary[order.shop].chiPhiFLsale += flSaleCostForCalculation;
-
-    // Cộng dồn các phí từ Excel (không quan tâm trạng thái đơn hàng)
-    costSummary[order.shop].phiCoDinh += order.phiCoDinh || 0;
-    costSummary[order.shop].phiDichVu += order.phiDichVu || 0;
-    costSummary[order.shop].phiThanhToan += order.phiThanhToan || 0;
-    platformCost[order.shop].phiCoDinh += order.phiCoDinh || 0;
-    platformCost[order.shop].phiDichVu += order.phiDichVu || 0;
-    platformCost[order.shop].phiThanhToan += order.phiThanhToan || 0;
-
-    // Đếm số đơn hàng thực tế (đơn hàng đáp ứng tiêu chí doanh số thực tế)
+    // Kiểm tra trạng thái đơn hàng có bị loại bỏ hay không
     const trangThaiHopLe = validOrderStatuses.includes(order.trangThai) || regexConfirmedReceived.test(order.trangThai);
     const isTraHangHoanTien = rejectReturnStatuses.includes(order.trangThaiTraHangHoanTien);
+    const isDonAo = order.loaiDon === "Đơn ảo";
+    
+    // Kiểm tra đơn hàng có bị loại bỏ hay không
+    const isOrderRejected = isDonAo || !trangThaiHopLe || isTraHangHoanTien;
+    
+    // Chỉ cộng dồn các chi phí nếu đơn hàng KHÔNG bị loại bỏ
+    if (!isOrderRejected) {
+      costSummary[order.shop].maGiamGiaShop += order.maGiamGiaShop || 0;
+      costSummary[order.shop].giamGiaComboShop += order.giamGiaComboShop || 0;
+      costSummary[order.shop].giamGiaComboGhep += order.comboCost || 0;
+      costSummary[order.shop].chiPhiFLsale += order.flSaleCost || 0;
+      
+      // Cộng dồn các phí từ Excel
+      costSummary[order.shop].phiCoDinh += order.phiCoDinh || 0;
+      costSummary[order.shop].phiDichVu += order.phiDichVu || 0;
+      costSummary[order.shop].phiThanhToan += order.phiThanhToan || 0;
+      platformCost[order.shop].phiCoDinh += order.phiCoDinh || 0;
+      platformCost[order.shop].phiDichVu += order.phiDichVu || 0;
+      platformCost[order.shop].phiThanhToan += order.phiThanhToan || 0;
+    }
+
+    // Đếm số đơn hàng thực tế (đơn hàng đáp ứng tiêu chí doanh số thực tế)
 
     // Debug: In ra thông tin đơn hàng không hợp lệ
     if (order.loaiDon === "Đơn ảo") {
@@ -1172,7 +1178,7 @@ function renderCostTables() {
     console.log(`${shop}: Tổng ${platformCost[shop].totalOrders} đơn, Thực tế ${platformCost[shop].soDonThucTe} đơn`);
   }
 
-  // Cộng chi phí AFF theo shop
+  // Cộng chi phí AFF theo shop (chỉ cho các đơn hàng không bị loại bỏ)
   for (const affOrder of affOrders) {
     if (!costSummary[affOrder.shop]) {
       costSummary[affOrder.shop] = {
@@ -1188,7 +1194,20 @@ function renderCostTables() {
         validOrders: 0
       };
     }
-    costSummary[affOrder.shop].chiPhiAFF = (costSummary[affOrder.shop].chiPhiAFF || 0) + affOrder.chiPhi;
+    
+    // Tìm đơn hàng tương ứng trong dataOrders để kiểm tra trạng thái
+    const correspondingOrder = dataOrders.get(affOrder.maDonHang);
+    if (correspondingOrder) {
+      const trangThaiHopLe = validOrderStatuses.includes(correspondingOrder.trangThai) || regexConfirmedReceived.test(correspondingOrder.trangThai);
+      const isTraHangHoanTien = rejectReturnStatuses.includes(correspondingOrder.trangThaiTraHangHoanTien);
+      const isDonAo = correspondingOrder.loaiDon === "Đơn ảo";
+      const isOrderRejected = isDonAo || !trangThaiHopLe || isTraHangHoanTien;
+      
+      // Chỉ cộng chi phí AFF nếu đơn hàng không bị loại bỏ
+      if (!isOrderRejected) {
+        costSummary[affOrder.shop].chiPhiAFF = (costSummary[affOrder.shop].chiPhiAFF || 0) + affOrder.chiPhi;
+      }
+    }
   }
 
   // Render bảng chi phí tổng hợp
@@ -1853,21 +1872,35 @@ function renderCostTables() {
       selectedShop = document.getElementById("shopSelectTiktok").options[0].value;
       document.getElementById("shopSelectTiktok").value = selectedShop;
     }
-    // Tổng chi phí Combo ghép của shop đang chọn
+    // Tổng chi phí Combo ghép của shop đang chọn (chỉ cho đơn hàng không bị loại bỏ)
     let totalCombo = 0;
     for (const order of tiktokOrders) {
       if (order.shop === selectedShop) {
-        totalCombo += order.comboCost || 0;
+        // Kiểm tra trạng thái đơn hàng có bị loại bỏ hay không
+        const trangThaiHopLe = ["Đã hoàn tất", "Đã vận chuyển"].includes(order.orderStatus);
+        const isReturn = order.returnType === "Return/Refund";
+        const isDonAo = order.loaiDon === "Đơn ảo";
+        const isOrderRejected = isDonAo || !trangThaiHopLe || isReturn;
+        
+        // Chỉ cộng chi phí combo nếu đơn hàng không bị loại bỏ
+        if (!isOrderRejected) {
+          totalCombo += order.comboCost || 0;
+        }
       }
     }
-    // Tổng chi phí AFF của shop đang chọn
+    // Tổng chi phí AFF của shop đang chọn (chỉ cho đơn hàng không bị loại bỏ)
     let totalAff = 0;
     for (const aff of tiktokAffOrders) {
-      if (aff.tenNhaSangTao && aff.shop && aff.shop === selectedShop) {
-        totalAff += aff.chiPhiAFF || 0;
-      } else if (!aff.shop && selectedShop) {
-        // Nếu dữ liệu AFF không có trường shop, vẫn cộng hết (giữ logic cũ)
-        totalAff += aff.chiPhiAFF || 0;
+      // Kiểm tra trạng thái đơn hàng AFF có bị loại bỏ hay không
+      const isAffOrderRejected = normalizeStatus(aff.trangThaiDonHang).includes("hủy");
+      
+      if (!isAffOrderRejected) {
+        if (aff.tenNhaSangTao && aff.shop && aff.shop === selectedShop) {
+          totalAff += aff.chiPhiAFF || 0;
+        } else if (!aff.shop && selectedShop) {
+          // Nếu dữ liệu AFF không có trường shop, vẫn cộng hết (giữ logic cũ)
+          totalAff += aff.chiPhiAFF || 0;
+        }
       }
     }
     // Hiển thị 1 dòng cho shop đang chọn
@@ -1878,14 +1911,29 @@ function renderCostTables() {
       <td><strong>${formatVND(totalAff)}</strong></td>
     `;
     tbody.appendChild(tr);
-    // Thêm dòng tổng cộng cho tất cả các shop
+    // Thêm dòng tổng cộng cho tất cả các shop (chỉ cho đơn hàng không bị loại bỏ)
     let grandTotalCombo = 0;
     for (const order of tiktokOrders) {
-      grandTotalCombo += order.comboCost || 0;
+      // Kiểm tra trạng thái đơn hàng có bị loại bỏ hay không
+      const trangThaiHopLe = ["Đã hoàn tất", "Đã vận chuyển"].includes(order.orderStatus);
+      const isReturn = order.returnType === "Return/Refund";
+      const isDonAo = order.loaiDon === "Đơn ảo";
+      const isOrderRejected = isDonAo || !trangThaiHopLe || isReturn;
+      
+      // Chỉ cộng chi phí combo nếu đơn hàng không bị loại bỏ
+      if (!isOrderRejected) {
+        grandTotalCombo += order.comboCost || 0;
+      }
     }
     let grandTotalAff = 0;
     for (const aff of tiktokAffOrders) {
-      grandTotalAff += aff.chiPhiAFF || 0;
+      // Kiểm tra trạng thái đơn hàng AFF có bị loại bỏ hay không
+      const isAffOrderRejected = normalizeStatus(aff.trangThaiDonHang).includes("hủy");
+      
+      // Chỉ cộng chi phí AFF nếu đơn hàng không bị loại bỏ
+      if (!isAffOrderRejected) {
+        grandTotalAff += aff.chiPhiAFF || 0;
+      }
     }
     const trTotal = document.createElement("tr");
     trTotal.style.fontWeight = "bold";
